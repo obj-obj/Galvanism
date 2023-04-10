@@ -1,14 +1,9 @@
-pub fn add(left: usize, right: usize) -> usize {
-	left + right
-}
+mod structs;
+pub use structs::*;
 
-#[cfg(test)]
-mod tests {
-	use super::*;
-
-	#[test]
-	fn it_works() {
-		let result = add(2, 2);
-		assert_eq!(result, 4);
-	}
+pub async fn get_panel(hostname: &String) -> Result<Panel, reqwest::Error> {
+	reqwest::get(format!("http://{hostname}/api/v1/panel"))
+		.await?
+		.json()
+		.await
 }
