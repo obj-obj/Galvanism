@@ -1,44 +1,87 @@
 use mdns_sd::{ServiceDaemon, ServiceEvent};
-use span_api::get_panel;
+use span_api::{get_circuits, get_panel};
 use std::{
-	thread,
+	cmp::Ordering,
+	io, thread,
 	time::{Duration, Instant},
 };
-use tokio::task::JoinHandle;
+use tokio::sync::mpsc;
+use tui::{backend::CrosstermBackend, Terminal};
 
 type Error = Box<dyn std::error::Error + Send + Sync>;
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
-	let receiver = ServiceDaemon::new()?.browse("_span._tcp.local.")?;
-	let mut hostnames: Vec<String> = Vec::new();
-	let time = Instant::now();
-	while time.elapsed().as_secs() < 6 {
-		match receiver.recv_async().await? {
-			ServiceEvent::ServiceResolved(info) => {
+	let (tx, mut rx) = mpsc::channel::<String>(10);
+
+	// Zeroconf discovery thread
+	tokio::spawn(async move {
+		let receiver = ServiceDaemon::new()
+			.unwrap()
+			.browse("_span._tcp.local.")
+			.unwrap();
+		loop {
+			if let ServiceEvent::ServiceResolved(info) = receiver.recv_async().await.unwrap() {
 				let hostname = info.get_hostname();
 				// Every hostname has an extra period at the end that must be removed
-				hostnames.push(hostname[..hostname.len() - 1].into());
+				tx.send(hostname[..hostname.len() - 1].to_string())
+					.await
+					.unwrap();
 			}
-			_ => {}
 		}
-	}
+	});
 
+	let stdout = io::stdout();
+	let backend = CrosstermBackend::new(stdout);
+	let mut terminal = Terminal::new(backend)?;
+
+	let mut domains = Vec::new();
 	loop {
-		let mut handles: Vec<JoinHandle<Result<f32, reqwest::Error>>> = Vec::new();
-		for hostname in hostnames.clone() {
-			handles.push(tokio::spawn(async move {
-				let power = get_panel(&hostname).await?.instant_grid_power_w;
-				println!("{hostname}: {power}W");
-				Ok(power)
-			}));
+		let time = Instant::now();
+
+		while let Ok(domain) = rx.try_recv() {
+			if !domains.contains(&domain) {
+				domains.push(domain);
+			}
 		}
 
-		let mut power = 0.0;
-		for handle in handles {
-			power += handle.await??;
+		let mut panel_handles = Vec::new();
+		let mut circuit_handles = Vec::new();
+		for domain in &domains {
+			let panel_domain = domain.clone();
+			let circuit_domain = domain.clone();
+			panel_handles.push(tokio::spawn(async move { get_panel(&panel_domain).await }));
+			circuit_handles.push(tokio::spawn(
+				async move { get_circuits(&circuit_domain).await },
+			));
 		}
-		println!("Total power draw: {power}W");
-		thread::sleep(Duration::from_secs(1));
+		let mut panels = Vec::new();
+		for handle in panel_handles {
+			panels.push(handle.await??);
+		}
+		let mut circuits = Vec::new();
+		for handle in circuit_handles {
+			for circuit in handle.await??.circuits.into_values() {
+				circuits.push(circuit);
+			}
+		}
+		circuits.sort_unstable_by(|a, b| {
+			a.instant_power_w
+				.partial_cmp(&b.instant_power_w)
+				.unwrap_or(Ordering::Equal)
+		});
+
+		let mut grid_power = 0.0;
+		for panel in &panels {
+			grid_power += panel.instant_grid_power_w;
+		}
+
+		terminal.clear()?;
+		println!("Total: {grid_power}W");
+		for circuit in circuits.iter().take((terminal.size()?.height - 2).into()) {
+			println!("{}: {}W", circuit.name, circuit.instant_power_w);
+		}
+
+		thread::sleep(Duration::from_secs(1) - time.elapsed());
 	}
 }

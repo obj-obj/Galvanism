@@ -15,6 +15,8 @@ strip = true
 [dependencies]
 mdns-sd = "0.7"
 span_api = { version = "0.1.0", path = "span_api" }
+tui = "0.19.0"
+crossterm = "0.26.1"
 
 [dependencies.reqwest]
 version = "0.11"
