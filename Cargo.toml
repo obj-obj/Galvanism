@@ -1,27 +1,8 @@
-[package]
-name = "galvanism"
-version = "0.1.0"
-edition = "2021"
-
 [workspace]
-members = ["span_api"]
+members = ["crates/*"]
 
 # Optimize for speed and reduce size on release builds
 [profile.release]
 codegen-units = 1
 lto = true
 strip = true
-
-[dependencies]
-mdns-sd = "0.7"
-span_api = { version = "0.1.0", path = "span_api" }
-tui = "0.19.0"
-crossterm = "0.26.1"
-
-[dependencies.reqwest]
-version = "0.11"
-features = ["rustls-tls"]
-
-[dependencies.tokio]
-version = "1"
-features = ["full"]

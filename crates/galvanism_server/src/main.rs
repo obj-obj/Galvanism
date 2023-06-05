@@ -1,3 +1,5 @@
+mod span_api;
+
 use mdns_sd::{ServiceDaemon, ServiceEvent};
 use span_api::{get_circuits, get_panel};
 use std::{
