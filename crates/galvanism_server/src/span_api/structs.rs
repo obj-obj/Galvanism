@@ -20,7 +20,7 @@ impl Display for Detail {
 }
 
 #[derive(Deserialize, Debug)]
-#[serde(rename_all = "UPPERCASE")]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum State {
 	Open,
 	Closed,
@@ -67,11 +67,49 @@ pub struct Network {
 #[serde(rename_all = "camelCase")]
 pub struct Panel {
 	pub main_relay_state: State,
+	pub main_meter_energy: MainMeterEnergy,
 	pub instant_grid_power_w: f64,
 	pub feedthrough_power_w: f64,
+	pub feedthrough_energy: FeedthroughEnergy,
 	pub grid_sample_start_ms: i32,
 	pub grid_sample_end_ms: i32,
+	pub dsm_grid_state: DsmGridState,
+	pub dsn_state: DsmState,
+	pub current_run_config: CurrentRunConfig,
 	pub branches: Vec<Branch>,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct MainMeterEnergy {
+	pub produced_energy_wh: f64,
+	pub consumed_energy_wh: f64,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct FeedthroughEnergy {
+	pub produced_energy_wh: f64,
+	pub consumed_energy_wh: f64,
+}
+
+// These 3 following enums are unfinished - not all variants are known yet
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum DsmGridState {
+	DsmGridUp,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum DsmState {
+	DsmOnGrid,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum CurrentRunConfig {
+	PanelOnGrid,
 }
 
 #[derive(Deserialize, Debug)]
@@ -103,7 +141,15 @@ pub struct Circuit {
 	pub consumed_energy_wh: f64,
 	pub energy_accum_update_time_s: i64,
 	pub tabs: Vec<u8>,
+	pub priority: Priority,
 	pub is_user_controllable: bool,
 	pub is_sheddable: bool,
 	pub is_never_backup: bool,
+}
+
+// Unfinished (not all variants are known yet)
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum Priority {
+	MustHave,
 }
