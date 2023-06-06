@@ -20,7 +20,6 @@ impl Display for Detail {
 }
 
 #[derive(Deserialize, Debug)]
-#[serde(untagged)]
 #[serde(rename_all = "UPPERCASE")]
 pub enum State {
 	Open,
@@ -50,7 +49,7 @@ pub struct System {
 	pub manufacturer: String,
 	pub serial: String,
 	pub model: String,
-	//pub door_state: State,
+	pub door_state: State,
 	pub remaining_auth_unlock_button_presses: u8,
 	pub uptime: u32,
 }
@@ -67,8 +66,11 @@ pub struct Network {
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Panel {
+	pub main_relay_state: State,
 	pub instant_grid_power_w: f64,
 	pub feedthrough_power_w: f64,
+	pub grid_sample_start_ms: i32,
+	pub grid_sample_end_ms: i32,
 	pub branches: Vec<Branch>,
 }
 
@@ -76,6 +78,7 @@ pub struct Panel {
 #[serde(rename_all = "camelCase")]
 pub struct Branch {
 	pub id: u8,
+	pub relay_state: State,
 	pub instant_power_w: f64,
 	pub imported_active_energy_wh: f64,
 	pub exported_active_energy_wh: f64,
@@ -93,6 +96,7 @@ pub struct Circuits {
 pub struct Circuit {
 	pub id: String,
 	pub name: String,
+	pub relay_state: State,
 	pub instant_power_w: f64,
 	pub instant_power_update_time_s: i64,
 	pub produced_energy_wh: f64,

@@ -4,7 +4,7 @@ pub use structs::*;
 use colored::Colorize;
 use serde::de::DeserializeOwned;
 
-pub type Result<T> = reqwest::Result<T>;
+type Result<T> = reqwest::Result<T>;
 
 async fn get<T>(hostname: &str, api_path: &str) -> Result<T>
 where
@@ -17,14 +17,17 @@ where
 	{
 		Request::Data(data) => Ok(data),
 		Request::Detail(detail) => {
-			let button_presses_left: String =
-				match reqwest::get(format!("http://{hostname}/api/v1/status")).await {
-					Ok(data) => match data.json::<Status>().await {
-						Ok(data) => data.system.remaining_auth_unlock_button_presses.to_string(),
-						Err(err) => err.to_string(),
-					},
+			let button_presses_left: String = match crate::CLIENT
+				.get(format!("http://{hostname}/api/v1/status"))
+				.send()
+				.await
+			{
+				Ok(data) => match data.json::<Status>().await {
+					Ok(data) => data.system.remaining_auth_unlock_button_presses.to_string(),
 					Err(err) => err.to_string(),
-				};
+				},
+				Err(err) => err.to_string(),
+			};
 			panic!("{}",
 				format!(
 					"\nSpan panel {hostname}\n\

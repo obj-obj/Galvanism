@@ -1,6 +1,8 @@
 mod span_api;
 
+use lazy_static::lazy_static;
 use mdns_sd::{ServiceDaemon, ServiceEvent};
+use reqwest::Client;
 use span_api::{get_circuits, get_panel};
 use std::{
 	cmp::Ordering,
@@ -11,6 +13,16 @@ use tokio::sync::mpsc;
 use tui::{backend::CrosstermBackend, Terminal};
 
 type Error = Box<dyn std::error::Error + Send + Sync>;
+
+lazy_static! {
+	pub static ref CLIENT: Client = Client::builder()
+		.gzip(true)
+		.brotli(true)
+		.deflate(true)
+		.use_rustls_tls()
+		.build()
+		.unwrap();
+}
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
