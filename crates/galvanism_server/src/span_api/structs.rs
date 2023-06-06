@@ -71,8 +71,8 @@ pub struct Panel {
 	pub instant_grid_power_w: f64,
 	pub feedthrough_power_w: f64,
 	pub feedthrough_energy: FeedthroughEnergy,
-	pub grid_sample_start_ms: i32,
-	pub grid_sample_end_ms: i32,
+	pub grid_sample_start_ms: u32,
+	pub grid_sample_end_ms: u32,
 	pub dsm_grid_state: DsmGridState,
 	pub dsn_state: DsmState,
 	pub current_run_config: CurrentRunConfig,
@@ -152,4 +152,41 @@ pub struct Circuit {
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum Priority {
 	MustHave,
+}
+
+/// `GET` `/api/v1/auth/clients`
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct Clients {
+	pub clients: HashMap<String, Client>,
+}
+
+/// `GET` `/api/v1/auth/clients/{client}`
+#[derive(Deserialize, Debug)]
+pub struct Client {
+	pub description: String,
+	pub issued_at: i64,
+	pub allowed_endpoint_groups: AllowedEndpointGroups,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct AllowedEndpointGroups {
+	pub delete: Vec<String>,
+	pub get: Vec<String>,
+	pub post: Vec<String>,
+	pub push: Vec<String>,
+}
+
+/// `POST` `/api/v1/auth/register`
+#[derive(Deserialize, Debug)]
+pub struct RegisterClient {
+	pub name: String,
+	pub description: String,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct RegisterClientResponse {
+	pub access_token: String,
+	pub token_type: String,
 }
